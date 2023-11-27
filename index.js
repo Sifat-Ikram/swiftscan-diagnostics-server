@@ -87,7 +87,7 @@ async function run() {
       res.send(result);
     })
 
-    app.get('/user/admin/:email', verifyToken,  async (req, res) => {
+    app.get('/user/admin/:email', verifyToken, async (req, res) => {
       const email = req.params.email;
       if (email !== req.decoded.email) {
         return res.status(403).send({ message: 'unauthorized access' })
@@ -124,6 +124,19 @@ async function run() {
     // service api
     app.get('/service', async (req, res) => {
       const result = await serviceCollection.find().toArray();
+      res.send(result);
+    })
+
+    app.post('/service', async (req, res) => {
+      const test = req.body;
+      const result = await serviceCollection.insertOne(test);
+      res.send(result);
+    })
+
+    app.delete('/service/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await serviceCollection.deleteOne(query);
       res.send(result);
     })
 
