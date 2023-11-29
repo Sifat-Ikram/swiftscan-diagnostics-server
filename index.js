@@ -61,10 +61,12 @@ async function run() {
     const serviceCollection = client.db("swiftscanDB").collection("service");
     const cartCollection = client.db("swiftscanDB").collection("cart");
     const userCollection = client.db("swiftscanDB").collection("user");
+    const bannerCollection = client.db("swiftscanDB").collection("banner");
+    const subDistrictCollection = client.db("swiftscanDB").collection("subDistrict");
 
 
     // jwt api
-    app.post('/jwt', async (req, res) => {
+    app.post('/jwt', verifyAdmin, verifyToken, async (req, res) => {
       const user = req.body;
       const token = jwt.sign(user, process.env.ACCESS_TOKEN, { expiresIn: '1h' });
       res.send({ token });
@@ -82,12 +84,30 @@ async function run() {
       res.send(result);
     })
 
+    app.patch('/user/:id', async (req, res) => {
+      const user = req.body;
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const options = { upsert: true };
+      const updatedDoc = {
+        $set: {
+          name: user.name,
+          email: user.email,
+          photo: user.photo,
+          bloodGroup: user.bloodGroup,
+          district: user.district
+        }
+      }
+      const result = await userCollection.updateOne(filter, updatedDoc, options);
+      res.send(result);
+    })
+
     app.get('/user', async (req, res) => {
       const result = await userCollection.find().toArray();
       res.send(result);
     })
 
-    app.get('/user/admin/:email', verifyToken, async (req, res) => {
+    app.get('/user/admin/:email', verifyToken, verifyToken, async (req, res) => {
       const email = req.params.email;
       if (email !== req.decoded.email) {
         return res.status(403).send({ message: 'unauthorized access' })
@@ -140,9 +160,45 @@ async function run() {
       res.send(result);
     })
 
+    app.patch('/service/:id', async (req, res) => {
+      const item = req.body;
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const options = { upsert: true };
+      const updatedDoc = {
+        $set: {
+          title: item.title,
+          price: parseFloat(item.price),
+          date: item.date,
+          details: item.details,
+          slots: [
+            {
+              "id": 1,
+              "time": item.time1,
+              "availability": item.status1
+            },
+            {
+              "id": 2,
+              "time": item.time2,
+              "availability": item.status2
+            },
+            {
+              "id": 3,
+              "time": item.time3,
+              "availability": item.status3
+            }
+          ],
+          image: item.image
+        }
+      }
+
+      const result = await serviceCollection.updateOne(filter, updatedDoc, options);
+      res.send(result);
+    })
+
 
     // cart api
-    app.post('/carts', async (req, res) => {
+    app.post('/cart', async (req, res) => {
       const cartItem = req.body;
       const result = await cartCollection.insertOne(cartItem);
       res.send(result);
@@ -155,16 +211,64 @@ async function run() {
       res.send(result);
     })
 
-    app.delete('/cart/:id', async (req, res) => {
+    app.get('/cart/admin', async (req, res) => {
+      const query = req.body;
+      const result = await cartCollection.find(query).toArray();
+      res.send(result);
+    })
+
+    app.delete('/cart/admin/:id', async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) }
       const result = await cartCollection.deleteOne(query);
       res.send(result);
     })
 
+    app.delete('/cart/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { id: new ObjectId(id) }
+      const result = await cartCollection.deleteOne(query);
+      res.send(result);
+    })
+
+    // banner api
+    app.get('/banner', async (req, res) => {
+      const query = req.body;
+      const result = await bannerCollection.find(query).toArray();
+      res.send(result);
+    })
+
+    app.post('/banner', async (req, res) => {
+      const bannerItem = req.body;
+      const result = await bannerCollection.insertOne(bannerItem);
+      res.send(result);
+    })
+
+    app.patch('/banner', async (req, res) => {
+      const item = req.body;
+      const options = { upsert: true };
+      const updatedDoc = {
+        $set: {
+          title: item.title,
+          text: item.text,
+          image: item.image
+        }
+      }
+      const result = await bannerCollection.updateOne(item, updatedDoc, options);
+      res.send(result);
+    })
+
+    // upozila api
+
+    app.get('/subDistrict', async (req, res) => {
+      const query = req.body;
+      const result = await subDistrictCollection.find(query).toArray();
+      res.send(result);
+    })
+
     // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
-    console.log("Pinged your deployment. You successfully connected to MongoDB!");
+    // await client.db("admin").command({ ping: 1 });
+    // console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
