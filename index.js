@@ -8,7 +8,10 @@ const port = process.env.PORT || 4321;
 
 // middleware
 
-app.use(cors());
+app.use(cors({
+  origin: ['http://localhost:5173','https://swiftscan-diagnostics.web.app','https://swiftscan-diagnostics.firebaseapp.com'],
+  credentials: true,
+}));
 app.use(express.json());
 
 
