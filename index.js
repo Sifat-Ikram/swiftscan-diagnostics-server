@@ -69,7 +69,7 @@ async function run() {
 
 
     // jwt api
-    app.post('/jwt', verifyAdmin, verifyToken, async (req, res) => {
+    app.post('/jwt', async (req, res) => {
       const user = req.body;
       const token = jwt.sign(user, process.env.ACCESS_TOKEN, { expiresIn: '1h' });
       res.send({ token });
@@ -110,7 +110,7 @@ async function run() {
       res.send(result);
     })
 
-    app.get('/user/admin/:email', verifyToken, verifyToken, async (req, res) => {
+    app.get('/user/admin/:email', verifyToken, async (req, res) => {
       const email = req.params.email;
       if (email !== req.decoded.email) {
         return res.status(403).send({ message: 'unauthorized access' })
